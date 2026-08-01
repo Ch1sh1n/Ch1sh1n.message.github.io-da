@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>あなただけのメッセージ</title>
+<title>メッセージが届いています</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -14,6 +14,7 @@
     align-items: center;
     justify-content: center;
     padding: 24px;
+    overflow: hidden;
   }
   .card {
     background: rgba(255,255,255,0.92);
@@ -23,30 +24,179 @@
     width: 100%;
     box-shadow: 0 20px 40px rgba(0,0,0,0.15);
     text-align: center;
+    position: relative;
+    overflow: visible;
   }
-  h1 {
-    font-size: 20px;
-    color: #d1477a;
-    margin-bottom: 8px;
+
+  /* ---- 封筒画面 ---- */
+  #envelopeScreen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
   }
-  p.sub {
-    font-size: 13px;
-    color: #999;
-    margin-bottom: 24px;
+  .envelope-stage {
+    width: 180px;
+    height: 130px;
+    margin: 14px auto 28px;
+    position: relative;
+    perspective: 600px;
   }
-  input[type="text"] {
+  .envelope-body {
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 180px;
+    height: 110px;
+    background: linear-gradient(135deg, #fff0e6, #ffe3e8);
+    border-radius: 10px;
+    box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+    z-index: 2;
+    overflow: hidden;
+  }
+  .envelope-body::after {
+    content: "";
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 55px;
+    background: linear-gradient(135deg, #ffe0e6, #ffd7c9);
+    clip-path: polygon(0 0, 50% 60%, 100% 0, 100% 100%, 0 100%);
+  }
+  .envelope-flap {
+    position: absolute;
+    top: -1px; left: 0;
+    width: 180px;
+    height: 65px;
+    background: linear-gradient(135deg, #ee9ca7, #f4a9b5);
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    transform-origin: top center;
+    z-index: 3;
+    transition: transform 0.55s cubic-bezier(.4,1.6,.6,1);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+  }
+  .envelope-stage.idle .envelope-flap {
+    animation: sway 2.2s ease-in-out infinite;
+  }
+  @keyframes sway {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(1.2deg); }
+  }
+  .envelope-flap.open {
+    transform: rotateX(180deg);
+    animation: none;
+  }
+  .envelope-heart {
+    position: absolute;
+    top: 34px; left: 78px;
+    font-size: 22px;
+    z-index: 4;
+    animation: pulse 1.5s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.22); }
+  }
+  .letter-paper {
+    position: absolute;
+    bottom: 8px;
+    left: 20px;
+    width: 140px;
+    height: 90px;
+    background: #fffdf8;
+    border-radius: 6px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+    z-index: 1;
+    opacity: 0;
+    transform: translateY(0) scale(0.9);
+  }
+  .letter-paper.pop {
+    animation: letterPop 0.7s ease forwards 0.25s;
+  }
+  @keyframes letterPop {
+    0% { opacity: 0; transform: translateY(0) scale(0.85); }
+    60% { opacity: 1; transform: translateY(-70px) scale(1.02) rotate(-2deg); }
+    100% { opacity: 1; transform: translateY(-64px) scale(1) rotate(-1deg); }
+  }
+
+  h1 { font-size: 19px; color: #d1477a; margin-bottom: 6px; }
+  p.sub { font-size: 13px; color: #999; margin-bottom: 4px; }
+  .tap-hint {
+    font-size: 12px;
+    color: #ee9ca7;
+    margin-top: 18px;
+    animation: blink 1.8s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+  .envelope-stage.shrink {
+    animation: shrinkOut 0.4s ease forwards 0.75s;
+  }
+  @keyframes shrinkOut {
+    to { opacity: 0; transform: scale(0.85); }
+  }
+
+  /* ---- 紙吹雪 ---- */
+  .confetti-layer {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 10;
+    overflow: visible;
+  }
+  .confetti-piece {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    font-size: 18px;
+    opacity: 0;
+    will-change: transform, opacity;
+    animation: burst 0.9s ease-out forwards;
+  }
+  @keyframes burst {
+    0% { opacity: 1; transform: translate(-50%, -50%) scale(0.4) rotate(0deg); }
+    100% {
+      opacity: 0;
+      transform:
+        translate(calc(-50% + var(--dx)), calc(-50% + var(--dy)))
+        scale(1.1) rotate(var(--rot));
+    }
+  }
+
+  /* ---- メッセージ画面 ---- */
+  #messageScreen { display: none; }
+  #messageScreen.show { display: block; animation: fadeUp 0.6s ease; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .message-box {
+    background: linear-gradient(135deg, #fff5f6, #fff0e6);
+    border-radius: 16px;
+    padding: 22px;
+    font-size: 16px;
+    line-height: 1.8;
+    color: #5a3d42;
+    margin-bottom: 20px;
+    border: 1px solid #f4c6d0;
+    text-align: left;
+    box-shadow: 0 8px 20px rgba(238,156,167,0.25);
+  }
+  textarea {
     width: 100%;
+    min-height: 90px;
     padding: 14px;
     border: 2px solid #f4c6d0;
     border-radius: 12px;
-    font-size: 16px;
+    font-size: 15px;
     outline: none;
+    resize: vertical;
+    font-family: inherit;
     margin-bottom: 16px;
-    transition: border-color 0.2s;
   }
-  input[type="text"]:focus {
-    border-color: #ee9ca7;
-  }
+  textarea:focus { border-color: #ee9ca7; }
   button {
     width: 100%;
     padding: 14px;
@@ -62,72 +212,32 @@
   button:active { transform: scale(0.97); }
   button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  #result {
-    margin-top: 24px;
-    display: none;
-  }
-  #result.show {
-    display: block;
-    animation: fadeUp 0.6s ease;
-  }
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .message-box {
-    background: linear-gradient(135deg, #fff5f6, #fff0e6);
-    border-radius: 16px;
-    padding: 20px;
-    font-size: 16px;
-    line-height: 1.7;
-    color: #5a3d42;
-    margin-bottom: 20px;
-    border: 1px solid #f4c6d0;
-  }
-  textarea {
-    width: 100%;
-    min-height: 90px;
-    padding: 14px;
-    border: 2px solid #f4c6d0;
-    border-radius: 12px;
-    font-size: 15px;
-    outline: none;
-    resize: vertical;
-    font-family: inherit;
-    margin-bottom: 16px;
-  }
-  textarea:focus { border-color: #ee9ca7; }
-
-  #thanks {
-    display: none;
-    font-size: 16px;
-    color: #d1477a;
-    font-weight: bold;
-    padding: 20px 0;
-  }
+  #thanks { display: none; font-size: 16px; color: #d1477a; font-weight: bold; padding: 20px 0; }
   #thanks.show { display: block; animation: fadeUp 0.6s ease; }
 
-  #error {
-    display: none;
-    color: #c0392b;
-    font-size: 13px;
-    margin-top: 12px;
-  }
+  #error { display: none; color: #c0392b; font-size: 13px; margin-top: 12px; }
 </style>
 </head>
 <body>
 
-<div class="card">
-  <div id="step1">
-    <h1>✨ あなただけのメッセージ ✨</h1>
-    <p class="sub">お名前を入力してボタンを押してみてね</p>
-    <input type="text" id="nameInput" placeholder="お名前(ニックネームでもOK)" maxlength="20">
-    <button id="generateBtn" onclick="generateMessage()">メッセージを作る</button>
+<div class="card" id="cardEl">
+
+  <div id="envelopeScreen" onclick="openLetter()">
+    <h1>💌 メッセージが届いています</h1>
+    <p class="sub">タップして開けてね</p>
+    <div class="envelope-stage idle" id="envelopeStage">
+      <div class="letter-paper" id="letterPaper"></div>
+      <div class="envelope-body"></div>
+      <div class="envelope-flap" id="envelopeFlap"></div>
+      <div class="envelope-heart">💕</div>
+      <div class="confetti-layer" id="confettiLayer"></div>
+    </div>
+    <div class="tap-hint">タップして開封する ▶</div>
   </div>
 
-  <div id="result">
-    <div class="message-box" id="generatedMessage"></div>
-    <p class="sub" style="margin-bottom:10px;">お返事をひとことどうぞ 💬</p>
+  <div id="messageScreen">
+    <div class="message-box" id="fixedMessage"></div>
+    <p class="sub" style="margin-bottom:10px; text-align:left;">お返事をひとことどうぞ 💬</p>
     <textarea id="replyInput" placeholder="思ったことを気軽にどうぞ〜"></textarea>
     <button id="submitBtn" onclick="submitMessage()">送信する</button>
     <div id="error"></div>
@@ -136,45 +246,80 @@
   <div id="thanks">
     届きました!ありがとう 🌸
   </div>
+
 </div>
 
 <script>
   // ここにGoogle Apps ScriptのウェブアプリURLを貼り付けてください
-  const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbxnMdTPOJ-KOCwJdXAaZitMyZJudLF04rZ_HLolhF0xaY9puEwbLRjfm2Inm452Ta5lEQ/exec";
+  const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbxvPJWBtAntcHEUeDX_eQuzBEZLO-AF5m_-Qn90GOH-wnGL1ztvCyXAifNFGypkcCqtlg/exec";
 
-  const templates = [
-    "{name}さんと話してると、時間があっという間だなっていつも思います。",
-    "{name}さんの笑ったときの感じ、なんかいいなってずっと思ってました。",
-    "実は{name}さんと喋ってる時間、地味に一番好きです。",
-    "{name}さんって話しやすくて、気づいたらこっちも素になってる気がします。",
-    "{name}さんとまたゆっくり喋りたいなってずっと思ってました。"
-  ];
+  // 固定メッセージ(ここを自由に書き換えてください)
+  const FIXED_MESSAGE = "今日も楽しかったよ、ありがとう！、また一緒にデートしようね";
 
-  let currentMessage = "";
+  let opened = false;
 
-  function generateMessage() {
-    const name = document.getElementById("nameInput").value.trim();
-    if (!name) {
-      alert("お名前を入力してください");
-      return;
+  function spawnConfetti() {
+    const layer = document.getElementById("confettiLayer");
+    const emojis = ["💖","✨","💕","🌸","⭐️","💗"];
+    const count = 16;
+    for (let i = 0; i < count; i++) {
+      const el = document.createElement("div");
+      el.className = "confetti-piece";
+      el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 70 + Math.random() * 90;
+      const dx = Math.cos(angle) * dist;
+      const dy = Math.sin(angle) * dist - 30;
+      const rot = (Math.random() * 360 - 180) + "deg";
+      el.style.setProperty("--dx", dx + "px");
+      el.style.setProperty("--dy", dy + "px");
+      el.style.setProperty("--rot", rot);
+      el.style.animationDelay = (Math.random() * 0.12) + "s";
+      layer.appendChild(el);
+      setTimeout(() => el.remove(), 1100);
     }
-    const template = templates[Math.floor(Math.random() * templates.length)];
-    currentMessage = template.replace("{name}", name);
+  }
 
-    document.getElementById("generatedMessage").textContent = currentMessage;
-    document.getElementById("result").classList.add("show");
-    document.getElementById("generateBtn").disabled = true;
+  function openLetter() {
+    if (opened) return;
+    opened = true;
+
+    if (navigator.vibrate) {
+      navigator.vibrate([15, 40, 15]);
+    }
+
+    const stage = document.getElementById("envelopeStage");
+    const flap = document.getElementById("envelopeFlap");
+    const paper = document.getElementById("letterPaper");
+
+    stage.classList.remove("idle");
+    flap.classList.add("open");
+    paper.classList.add("pop");
+    spawnConfetti();
+    stage.classList.add("shrink");
+
+    document.getElementById("fixedMessage").textContent = FIXED_MESSAGE;
+
+    setTimeout(() => {
+      document.getElementById("envelopeScreen").style.display = "none";
+      document.getElementById("messageScreen").classList.add("show");
+    }, 950);
   }
 
   async function submitMessage() {
-    const name = document.getElementById("nameInput").value.trim();
     const reply = document.getElementById("replyInput").value.trim();
     const errorEl = document.getElementById("error");
     const submitBtn = document.getElementById("submitBtn");
 
     errorEl.style.display = "none";
 
-    if (ENDPOINT_URL === "PASTE_YOUR_GAS_URL_HERE") {
+    if (!reply) {
+      errorEl.textContent = "返信メッセージを入力してください";
+      errorEl.style.display = "block";
+      return;
+    }
+
+    if (ENDPOINT_URL.indexOf("PASTE_YOUR_GAS_URL_HERE") !== -1) {
       errorEl.textContent = "送信先URLが未設定です(作成者向けの表示です)";
       errorEl.style.display = "block";
       return;
@@ -187,15 +332,11 @@
       await fetch(ENDPOINT_URL, {
         method: "POST",
         mode: "no-cors",
-        body: JSON.stringify({
-          name: name,
-          generatedMessage: currentMessage,
-          reply: reply
-        })
+        body: JSON.stringify({ reply: reply })
       });
 
-      document.getElementById("step1").style.display = "none";
-      document.getElementById("result").style.display = "none";
+      document.getElementById("messageScreen").classList.remove("show");
+      document.getElementById("messageScreen").style.display = "none";
       document.getElementById("thanks").classList.add("show");
     } catch (err) {
       errorEl.textContent = "送信に失敗しました。通信環境を確認してもう一度お試しください。";
